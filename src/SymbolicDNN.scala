@@ -5,14 +5,10 @@ import java.io.File
   * Created by malig on 2/28/19.
   */
 class SymbolicDNN {
-
-  def sym_Exec_DNN(input: Array[Expr], layers: Layers): Unit = {
-    layers.se_compute(input).map(s => println(s.toString))
+  def sym_Exec_DNN(input: Array[SymbolicNeuron], layers: Layers , af : PathEffect => Array[PathEffect]): Unit = {
+    layers.se_compute(input , af).map(s => println(s.toString))
   }
-
-
 }
-
 
 /**
   *
@@ -35,47 +31,23 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int) 
     println("\n")
   }
 
-  def compute(input: Array[Expr]): Array[Expr] = {
-    val return_array = new Array[Expr](neuron_count)
+  def compute(input: Array[SymbolicNeuron] , af : PathEffect => Array[PathEffect]): Array[SymbolicNeuron] = {
+    val return_array = new Array[SymbolicNeuron](neuron_count)
     for (i <- 0 to neuron_count - 1) {
-      var expr = multiple(input(0),
-        new ConcreteValue(
-          new Numeric(
-            NumericUnderlyingType._Float
-          ), matrix(0)(i).toString
-        )
-      )
-
+      var sym_neuron = input(0).computeNeuronValue(matrix(0)(i))
       for (j <- 1 to input.length - 1) {
-        expr = add(expr,
-          multiple(input(j),
-            new ConcreteValue(
-              new Numeric(
-                NumericUnderlyingType._Float
-              ), matrix(j)(i).toString
-            )
-          )
-        )
+        val sym_neuron_temp = input(j).computeNeuronValue(matrix(j)(i))
+        sym_neuron = sym_neuron.addNeuron(sym_neuron_temp)
       }
-      return_array(i) = expr
+      sym_neuron.applyActivation(af)
+      return_array(i) = sym_neuron
     }
     return_array
   }
 
-  def add(left: Expr, right: Expr): ArithmeticExpr = {
-    new ArithmeticExpr(left, new SymOp(Numeric(NumericUnderlyingType._Float), ArithmeticOp.Addition), right)
-  }
 
-  def multiple(left: Expr, right: Expr): ArithmeticExpr = {
-    new ArithmeticExpr(left, new SymOp(Numeric(NumericUnderlyingType._Float), ArithmeticOp.Multiplication), right)
-  }
 
 }
-
-
-
-
-
 /**
   *
   * layers encode the weight matrices for all the layers in the DNN
@@ -88,10 +60,10 @@ class Layers(layers: Int, path_to_dir: String) {
   load(path_to_dir)
 
 
-  def se_compute(input :Array[Expr]): Array[Expr] ={
+  def se_compute(input :Array[SymbolicNeuron] , af : PathEffect => Array[PathEffect]): Array[SymbolicNeuron] ={
     var current  = input
     for(matrix <- w_matrices){
-      current  = matrix.compute(current)
+      current  = matrix.compute(current, af)
     }
     return current
   }

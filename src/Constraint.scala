@@ -68,11 +68,16 @@ class Constraint(c: Array[Clause]) {
     } else false
   }
 
-  def conjunctWith(other: Constraint) = {
+  def conjunctWith(other: Constraint):Constraint = {
     //TODO: might want to simplify before merging, in case there are inconsistent clauses or repetitive ones
     clauses = clauses ++ other.clauses
+    return this
   }
 
+  def conjunctWithSideEffectFree(other: Clause):Constraint = {
+    //TODO: might want to simplify before merging, in case there are inconsistent clauses or repetitive ones
+    return new Constraint(clauses ++ Array(other))
+  }
   def applyEffect(x: SymVar, effect: Expr): Constraint = {
     /*
             map builds a new collection(Array)
