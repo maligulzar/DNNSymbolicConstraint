@@ -13,7 +13,7 @@ abstract class Expr {
   var actualType: VType
   def toString: String
   def applyEffect(x: SymVar, effect: Expr): Expr
-  //def toZ3Query(initials: Z3QueryState): String
+  def toZ3Query(initials: Z3QueryState): String
   def deepCopy: Expr
   def replace(thisVar: SymVar, other: SymVar): Expr
   def addSuffix(sfx: String): Expr
@@ -59,17 +59,9 @@ case class ConcreteValue(atype: VType, var value: String) extends Expr {
 
   override def applyEffect(x: SymVar, effect: Expr): Expr = { this }
 
-//  override def toZ3Query(initials: Z3QueryState): String = {
-//    atype match {
-//      case t: NonNumeric =>
-//        if (t.underlyingType == _String) {
-//          return s""" "${value}" """
-//        }
-//      case _ =>
-//      //
-//    }
-//    return value.toString
-//  }
+  override def toZ3Query(initials: Z3QueryState): String = {
+    return value.toString
+  }
 
   override def deepCopy: ConcreteValue = {
     new ConcreteValue(actualType, value)
@@ -93,7 +85,7 @@ case class ArithmeticExpr(left: Expr, middle: SymOp, right: Expr) extends Expr {
   var actualType = op.actualType
 
   override def toString(): String = {
-    left.toString + " " + op.toString + " " + right.toString
+    "("+left.toString + " " + op.toString + " " + right.toString+")"
   }
 
   override def applyEffect(x: SymVar, effect: Expr): Expr = {
@@ -101,13 +93,13 @@ case class ArithmeticExpr(left: Expr, middle: SymOp, right: Expr) extends Expr {
   }
 
 
-//  override def toZ3Query(initials: Z3QueryState): String = {
-//    // left.toString + " " + op.toString + " " + right.toString
-//    s"""(${op.toString}  ${leftExpr.toZ3Query(initials)} ${rightExpr
-//      .toZ3Query(initials)} )"""
-//    //"FIX NON TERMINAL Z3 QUERY"
-//
-//  }
+  override def toZ3Query(initials: Z3QueryState): String = {
+    // left.toString + " " + op.toString + " " + right.toString
+    s"""(${op.toString}  ${leftExpr.toZ3Query(initials)} ${rightExpr
+      .toZ3Query(initials)} )"""
+    //"FIX NON TERMINAL Z3 QUERY"
+
+  }
 
   override def deepCopy(): ArithmeticExpr = {
     new ArithmeticExpr(left.deepCopy, middle, right.deepCopy)

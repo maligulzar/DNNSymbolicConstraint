@@ -45,56 +45,45 @@ class PathEffect(pc: Constraint, udfEffect: Expr) {
   //      //    return buff.filter(s=>s!=null).reduce(_+"\n"+_)
   //    }
 
-//  def toZ3Query(): String = {
-//
-//    val list: HashSet[(String, VType)] = new HashSet[(String, VType)]();
-//
-//    val split = new HashMap[String, SplitHandler]();
-//    val replace = new HashMap[String, String]();
-//
-//    val state: Z3QueryState = Z3QueryState(list, split, replace)
-//
-//    var pc = pathConstraint.toZ3Query(state) + "\n" + getEffectZ3Query(state)
-//    //fix the references
-//
-//    // for((k,v) <- state.replacements){
-//    //  pc =  pc.replaceAll(v, k)
-//    // }
-//
-//    var decls = s"""
-//                   |(set-logic QF_ASNIA)
-//                   |(set-option :produce-models true)
-//                   |
-//          |
-//          |(define-fun isinteger ((x!1 String)) Bool
-//                   |(or (str.in.re x!1 (  re.++ (str.to.re "-") (re.+ (re.range "0" "9")))) (str.in.re x!1 (re.+ (re.range "0" "9"))) )
-//                   |)
-//                   |
-//          |(define-fun notinteger ((x!1 String)) Bool
-//                   |(not (isinteger x!1))
-//                   |)
-//                   |
-//          |""".stripMargin
-//    val itr = state.init.iterator()
-//    while (itr.hasNext) {
-//      val i = itr.next()
-//      decls +=
-//        s"""(declare-fun ${i._1} () ${i._2.toZ3Query()})
-//           |""".stripMargin
-//    }
-//    s"""$decls
-//       |${generateSplitConstraints(state)}
-//       |$pc
-//       |
-//
-//     """.stripMargin //,generateSplitConstraints(state))
-//  }
+  def toZ3Query(): String = {
+
+    val list: HashSet[(String, VType)] = new HashSet[(String, VType)]();
+
+    val replace = new HashMap[String, String]();
+
+    val state: Z3QueryState = Z3QueryState(list, replace)
+    var pc = pathConstraint.toZ3Query(state)
+    //fix the references
+
+    // for((k,v) <- state.replacements){
+    //  pc =  pc.replaceAll(v, k)
+    // }
+
+    var decls = s"""
+                   |(set-logic AUFLIRA)
+                   |(set-option :produce-models true)
+                   |
+                   |
+          |""".stripMargin
+    val itr = state.init.iterator()
+    while (itr.hasNext) {
+      val i = itr.next()
+      decls +=
+        s"""(declare-fun ${i._1} () ${i._2.toZ3Query()})
+           |""".stripMargin
+    }
+    s"""$decls
+       |$pc
+       |
+
+     """.stripMargin //,generateSplitConstraints(state))
+  }
 
   def processOutput(str: String) {
     val arr = str.split("\n")
     val var_map = HashMap[String, String]()
     //      arr.map(s => s.split(":")).filter(s => s.length>0).map{
-    //        s =>
+    //        s =>s
     //          var_map(s(0)) = s(1)
     //      ""}
   }

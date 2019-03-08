@@ -1,7 +1,7 @@
 
 object NumericUnderlyingType extends Enumeration {
   type NumericUnderlyingType = Value
-  val _Float = Value("Float")
+  val _Float = Value("Real")
 }
 
 import NumericUnderlyingType._

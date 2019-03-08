@@ -43,16 +43,24 @@ class Constraint(c: Array[Clause]) {
     }
     result
   }
-//  def toZ3Query(initials: Z3QueryState): String = {
-//    if (clauses.length == 0)
-//      return ""
-//    if (clauses.length == 1) {
-//      return s"""(assert ${andClauses(0, initials)} )"""
-//    }
-//    val idx = 0
-//    //s"""(assert (${andClauses(idx , initials)}) )"""
-//    s"""(assert ${andClauses(idx, initials)} )"""
-//  }
+  def toZ3Query(initials: Z3QueryState): String = {
+    if (clauses.length == 0)
+      return ""
+    if (clauses.length == 1) {
+      return s"""(assert ${andClauses(0, initials)} )"""
+    }
+    val idx = 0
+    //s"""(assert (${andClauses(idx , initials)}) )"""
+    s"""(assert ${andClauses(idx, initials)} )"""
+  }
+
+  def andClauses(idx: Int, initials: Z3QueryState): String = {
+    if (idx == clauses.length - 1) {
+      clauses(idx).toZ3Query(initials)
+    } else {
+      s""" (and ${clauses(idx).toZ3Query(initials)} ${andClauses(idx + 1, initials)} )"""
+    }
+  }
 
 //  def andClauses(idx: Int, initials: Z3QueryState): String = {
 //    if (idx == clauses.length - 1) {
@@ -74,6 +82,10 @@ class Constraint(c: Array[Clause]) {
     return this
   }
 
+  def conjunctWithSideEffectFree(other: Constraint):Constraint = {
+    //TODO: might want to simplify before merging, in case there are inconsistent clauses or repetitive ones
+    return  new Constraint(clauses ++ other.clauses)
+  }
   def conjunctWithSideEffectFree(other: Clause):Constraint = {
     //TODO: might want to simplify before merging, in case there are inconsistent clauses or repetitive ones
     return new Constraint(clauses ++ Array(other))
@@ -111,44 +123,28 @@ class Clause(left: Expr, op: ComparisonOp = null, right: Expr = null) {
     else leftExpr.toString + " " + compOp.toString + " " + rightExpr.toString
   }
 
-//  def toZ3Query(initials: Z3QueryState): String = {
-//    var isString = false;
-//    if (leftExpr.actualType == NonNumeric(NonNumericUnderlyingType._String) || right.actualType == NonNumericUnderlyingType._String) {
-//      isString = true;
-//    }
-//
-//    var leftstr = leftExpr.toZ3Query(initials)
-//    var rightstr = rightExpr.toZ3Query(initials)
-//    try {
-//      if (leftExpr.isInstanceOf[ConcreteValue] && isString) {
-//        leftstr = leftstr.toInt.toChar.toString()
-//        leftstr = s""" "${leftstr}" """
-//      } else if (rightExpr.isInstanceOf[ConcreteValue] && isString) {
-//        rightstr = rightstr.toInt.toChar.toString()
-//        rightstr = s""" "${rightstr}" """
-//
-//      }
-//    } catch {
-//      case e: Exception =>
-//    }
-//
-//    if (compOp == null || rightExpr == null)
-//      leftExpr.toString
-//    else {
-//
-//      if (compOp == Notequals || compOp == Inequality) {
-//        return s""" (not (=  ${leftstr} ${rightstr} ))"""
-//      } else {
-//        //Z3 -- > Assertion (assert (> x 2))
-//        //  if(leftExpr.isInstanceOf[Terminal] && rightExpr.isInstanceOf[Terminal])
-//        return s"""(${if (compOp == Notequals || compOp == Equals) {
-//          "="
-//        } else {
-//          compOp.toString()
-//        }}  ${leftstr} ${rightstr} )"""
-//      }
-//    }
-//  }
+  def toZ3Query(initials: Z3QueryState): String = {
+
+    var leftstr = leftExpr.toZ3Query(initials)
+    var rightstr = rightExpr.toZ3Query(initials)
+
+    if (compOp == null || rightExpr == null)
+      leftExpr.toString
+    else {
+
+      if (compOp == Notequals || compOp == Inequality) {
+        return s""" (not (=  ${leftstr} ${rightstr} ))"""
+      } else {
+        //Z3 -- > Assertion (assert (> x 2))
+        //  if(leftExpr.isInstanceOf[Terminal] && rightExpr.isInstanceOf[Terminal])
+        return s"""(${if (compOp == Notequals || compOp == Equals) {
+          "="
+        } else {
+          compOp.toString()
+        }}  ${leftstr} ${rightstr} )"""
+      }
+    }
+  }
   override def equals(other: Any): Boolean = {
     if (other != null && other.isInstanceOf[Clause]) {
       this.toString == other.asInstanceOf[Clause].toString

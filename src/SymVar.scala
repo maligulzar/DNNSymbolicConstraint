@@ -20,11 +20,11 @@ class SymVar(atype: VType, var name: String) extends Expr {
   }
 
 
-//  override def toZ3Query(initials: Z3QueryState): String = {
-//    var temp_name = name.replaceAll("[^A-Za-z0-9_]", "")
-//    initials.addtoInit((temp_name, actualType))
-//    temp_name
-//  }
+  override def toZ3Query(initials: Z3QueryState): String = {
+    var temp_name = name.replaceAll("[^A-Za-z0-9_]", "")
+    initials.addtoInit((temp_name, actualType))
+    temp_name
+  }
 
    override def deepCopy: SymVar = {
     new SymVar(actualType, name)

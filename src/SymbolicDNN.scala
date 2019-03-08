@@ -1,15 +1,41 @@
-import java.io.File
+import java.io.{BufferedWriter, File, FileWriter}
+import java.util
+import java.util.HashSet
 
-
+import udfExtractor.SystemCommandExecutor
 /**
   * Created by malig on 2/28/19.
   */
 class SymbolicDNN {
-  def sym_Exec_DNN(input: Array[SymbolicNeuron], layers: Layers , af : PathEffect => Array[PathEffect]): Unit = {
-    layers.se_compute(input , af).map(s => println(s.toString))
-  }
-}
 
+
+  var Z3DIR: String = "/Users/malig/workspace/up_jpf/"
+  var SOLVER: String = "Z3"
+
+  def setZ3Dir(path: String) {
+    Z3DIR = path
+  }
+
+  def setSolver(path: String) {
+    SOLVER = path
+  }
+
+  var current_symbolic_neurons : Array[SymbolicNeuron] = new Array[SymbolicNeuron](0)
+
+
+  def sym_Exec_DNN(input: Array[SymbolicNeuron], layers: Layers , af : PathEffect => Array[PathEffect]): Unit = {
+    current_symbolic_neurons = layers.se_compute(input , af)
+  }
+
+  def print_SymbolicNeuron(): Unit ={
+    current_symbolic_neurons.map(s => println(s.toString))
+  }
+
+  def solveConstraints(neurons:Int): Unit ={
+    current_symbolic_neurons.map(s => s.solveWithZ3(log=false, SOLVER, Z3DIR , neurons ))
+  }
+
+}
 /**
   *
   * Class representing a weight matrix for each layer

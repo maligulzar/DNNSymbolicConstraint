@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="sym">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/../../up_jpf/jpf-symbc/lib/sym.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -5,9 +5,9 @@ object Main {
   def main(args: Array[String]): Unit = {
 
     val layers = new Layers(2,"/Users/malig/workspace/git/SymbolicDNN/layers")
-
-    val symArr = new Array[SymbolicNeuron](2)
-    for( i <- 0 to 1){
+      val inputsize = 3
+    val symArr = new Array[SymbolicNeuron](inputsize)
+    for( i <- 0 to inputsize-1){
       symArr(i) = new SymbolicNeuron(Array(new PathEffect(new Constraint(Array()) , new SymVar(new Numeric(NumericUnderlyingType._Float), "x"+i))))
     }
     layers.printLayers
@@ -29,7 +29,8 @@ object Main {
     }
 
     symDnn.sym_Exec_DNN(symArr,layers , activation)
-
+    symDnn.print_SymbolicNeuron()
+    symDnn.solveConstraints(inputsize)
   }
 
 
