@@ -132,7 +132,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
       commands.add(s)
       val commandExecutor: SystemCommandExecutor =
         new SystemCommandExecutor(commands, Z3dir)
-      val result: Int = commandExecutor.executeCommand();
+      val result: Int = commandExecutor.executeCommand(Main.map);
       val stdout: java.lang.StringBuilder =
         commandExecutor.getStandardOutputFromCommand
       val stderr: java.lang.StringBuilder =
@@ -143,7 +143,9 @@ class SymbolicNeuron(p: Array[PathEffect]) {
         println(str_lines.reduce(_+"\n"+_))
 
       //println("*******************************************************************************")
-
+      if(!stderr.toString.isEmpty()){
+        Main.unreachable +=1
+      }
       println("\n" + stderr.toString)
       return stdout.toString()
     } catch {
@@ -157,6 +159,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
 
   def solveWithZ3(log: Boolean = false , solver:String , z3dir:String , neurons :Int): Unit = {
     var i = 0
+    Main.unreachable = 0
     for (path <- paths) {
       var str = path.toZ3Query();
       if (solver.equals("CVC4")) {
@@ -174,6 +177,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
       i = i+1
       runZ3Command(filename, z3dir , log=log, solver=solver , neurons = neurons);
       println("------------------------")
+      println("Number of Unreachable "+Main.unreachable);
 
     }
   }
