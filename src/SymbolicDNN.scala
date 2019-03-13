@@ -1,17 +1,14 @@
 import java.io.{BufferedWriter, File, FileWriter}
-import java.util
-import java.util.HashSet
 
-import udfExtractor.SystemCommandExecutor
 
 import scala.collection.mutable.ArrayBuffer
 /**
   * Created by malig on 2/28/19.
   */
-class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : PathEffect => Array[PathEffect]) {
+class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : (PathEffect , Boolean) => Array[PathEffect]) {
 
 
-  var Z3DIR: String = "/Users/Aish/Downloads/"
+  var Z3DIR: String = "/Users/malig/workspace/up_jpf/"
   var SOLVER: String = "Z3"
 
   def setZ3Dir(path: String) {
@@ -29,10 +26,13 @@ class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : PathEffect
     layers.se_compute(input , af ,neuron, layer)
   }
 
-  def sym_Exec_DNN(): Unit = {
+  def symExecDNN(): Unit = {
     current_symbolic_neurons = layers.se_compute(input , af)
   }
 
+  def concreteExecDNN(arr : Array[Float] , act: Float=> Boolean): Array[Float] = {
+    return layers.concreteCompute(arr , act)
+  }
   def print_SymbolicNeuron(): Unit ={
     current_symbolic_neurons.map(s => println(s.toString))
   }
@@ -53,7 +53,7 @@ class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : PathEffect
   * Class representing a weight matrix for each layer
   *
   * */
-class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int) {
+class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int , activation: Activation) {
 
   private val matrix = Array.ofDim[Float](prev_layer_neuron_count, neuron_count)
 
@@ -69,7 +69,27 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int) 
     println("\n")
   }
 
-  def compute(input: Array[SymbolicNeuron] , af : PathEffect => Array[PathEffect]): Array[SymbolicNeuron] = {
+
+  def concreteCompute(input: Array[Float] , af : Float => Boolean): Array[Float] = {
+    val return_array = new Array[Float](neuron_count)
+    for (i <- 0 to neuron_count - 1) {
+      var sym_neuron = input(0)*matrix(0)(i)
+      for (j <- 1 to input.length - 1) {
+        val sym_neuron_temp = input(j)*matrix(j)(i)
+        sym_neuron = sym_neuron + sym_neuron_temp
+      }
+
+      if(af(sym_neuron)){
+        activation.addPattern(this.layer+":"+(i+1))
+      }else{
+
+      }
+      return_array(i) = sym_neuron
+    }
+    return_array
+  }
+
+  def compute(input: Array[SymbolicNeuron] , af : (PathEffect , Boolean) => Array[PathEffect]): Array[SymbolicNeuron] = {
     val return_array = new Array[SymbolicNeuron](neuron_count)
     for (i <- 0 to neuron_count - 1) {
       var sym_neuron = input(0).computeNeuronValue(matrix(0)(i))
@@ -78,17 +98,16 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int) 
         sym_neuron = sym_neuron.addNeuron(sym_neuron_temp)
       }
 
-//      if((I,J) == (NEURON, LAYER))
-      println(Main.activations.checkForPattern(this.layer+":"+(i+1)))
-      if(Main.activations.checkForPattern(this.layer+":"+(i+1))==true){
+      println(activation.checkForPattern(this.layer+":"+(i+1)))
+      if(activation.checkForPattern(this.layer+":"+(i+1))==true){
         Main.activateBoth = false
       } else{
         Main.activateBoth = true
       }
-      sym_neuron.applyActivation(af)
+      sym_neuron.applyActivation(af ,Main.activateBoth)
       return_array(i) = sym_neuron
-      printf("For layer "+this.layer);
-      printf(sym_neuron.toString);
+      println("For layer " + this.layer + " activated : " + Main.activateBoth);
+      //printf(sym_neuron.toString);
     }
     return_array
   }
@@ -97,9 +116,16 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int) 
 
 }
 
-class Activation( path_to_dir: String){
+class Activation(){
+
+
   private var activationPattern = new ArrayBuffer[String]()
-  load(path_to_dir)
+
+
+
+  def addPattern(pattern:String) ={
+   activationPattern.append(pattern)
+  }
 
   def checkForPattern(pattern:String): Boolean ={
     for(patt <- activationPattern){
@@ -118,7 +144,7 @@ class Activation( path_to_dir: String){
       val source = scala.io.Source.fromFile(file)
       try {
         val txt = source.getLines().mkString("\n")
-        val lines = txt.split("\n")
+        val lines = txt.split(",")
         var r = 0
         var c = 0
         for (line <- lines) {
@@ -142,14 +168,14 @@ class Activation( path_to_dir: String){
   * layers encode the weight matrices for all the layers in the DNN
   *
   * */
-class Layers(layers: Int, path_to_dir: String) {
+class Layers(layers: Int, path_to_dir: String , activations :Activation) {
 
   private val w_matrices = new Array[WeightMatrix](layers)
 
   load(path_to_dir)
 
 
-  def se_compute(input :Array[SymbolicNeuron] , af : PathEffect => Array[PathEffect]): Array[SymbolicNeuron] ={
+  def se_compute(input :Array[SymbolicNeuron] , af : (PathEffect , Boolean) => Array[PathEffect]): Array[SymbolicNeuron] ={
     var current  = input
     for(matrix <- w_matrices){
       current  = matrix.compute(current, af)
@@ -157,8 +183,16 @@ class Layers(layers: Int, path_to_dir: String) {
     return current
   }
 
+  def concreteCompute(input :Array[Float] , af :Float => Boolean): Array[Float] ={
+    var current  = input
+    for(matrix <- w_matrices){
+      current  = matrix.concreteCompute(current, af)
+    }
+    return current
+  }
 
-  def se_compute(input :Array[SymbolicNeuron] , af : PathEffect => Array[PathEffect] , neuron:Int , layer:Int): SymbolicNeuron ={
+
+  def se_compute(input :Array[SymbolicNeuron] , af : (PathEffect , Boolean) => Array[PathEffect] , neuron:Int , layer:Int): SymbolicNeuron ={
     var current  = input
     if(layer > w_matrices.length){
       println("Given layer exceed the total number of layers")
@@ -196,7 +230,7 @@ class Layers(layers: Int, path_to_dir: String) {
         val prev_layer_neuron = lines.length
         val r1 = lines(0).split(",")
         val neuron_count = r1.length
-        val matrix = new WeightMatrix(layer, neuron_count, prev_layer_neuron)
+        val matrix = new WeightMatrix(layer, neuron_count, prev_layer_neuron , activations)
         var r = 0
         var c = 0
         for (line <- lines) {

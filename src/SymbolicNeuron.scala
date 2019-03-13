@@ -23,10 +23,10 @@ class SymbolicNeuron(p: Array[PathEffect]) {
     new SymbolicNeuron(array_paths)
   }
 
-  def applyActivation(af : PathEffect => Array[PathEffect]) = {
+  def applyActivation(af : (PathEffect,Boolean) => Array[PathEffect] , activate : Boolean) = {
     var array_paths = new Array[PathEffect](0)
     for(p <- paths){
-      array_paths = array_paths ++ af(p)
+      array_paths = array_paths ++ af(p ,activate)
     }
     paths = array_paths
   }
@@ -45,7 +45,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
     new ArithmeticExpr(left, new SymOp(Numeric(NumericUnderlyingType._Float), ArithmeticOp.Addition), new ConcreteValue(
       new Numeric(
         NumericUnderlyingType._Float
-      ), right.toString
+      ), right.toString //f"${1}%1f
     )
     )
   }
@@ -69,7 +69,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
     return    new ArithmeticExpr(left, new SymOp(Numeric(NumericUnderlyingType._Float), ArithmeticOp.Multiplication), new ConcreteValue(
       new Numeric(
         NumericUnderlyingType._Float
-      ), right.toString
+      ), right.toString // f"${1}%1f
     )
     )
   }
@@ -132,7 +132,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
       commands.add(s)
       val commandExecutor: SystemCommandExecutor =
         new SystemCommandExecutor(commands, Z3dir)
-      val result: Int = commandExecutor.executeCommand(Main.map);
+      val result: Int = commandExecutor.executeCommand();
       val stdout: java.lang.StringBuilder =
         commandExecutor.getStandardOutputFromCommand
       val stderr: java.lang.StringBuilder =
