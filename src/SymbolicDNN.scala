@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : (PathEffect , Boolean) => Array[PathEffect]) {
 
 
-  var Z3DIR: String = "/Users/malig/workspace/up_jpf/"
+  var Z3DIR: String = "/Users/Aish/Downloads/"
   var SOLVER: String = "Z3"
 
   def setZ3Dir(path: String) {
@@ -56,6 +56,11 @@ class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : (PathEffec
 class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int , activation: Activation) {
 
   private val matrix = Array.ofDim[Float](prev_layer_neuron_count, neuron_count)
+  private var transposedMatrix = Array.ofDim[Float](neuron_count,prev_layer_neuron_count)
+
+  def transpose() :Unit={
+    transposedMatrix = matrix.transpose
+  }
 
   def insert(r: Int, c: Int, value: Float) = matrix(r - 1)(c - 1) = value
 
@@ -72,10 +77,12 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int ,
 
   def concreteCompute(input: Array[Float] , af : Float => Boolean): Array[Float] = {
     val return_array = new Array[Float](neuron_count)
+    try{
+
     for (i <- 0 to neuron_count - 1) {
-      var sym_neuron = input(0)*matrix(0)(i)
+      var sym_neuron = input(0)*transposedMatrix(0)(i)
       for (j <- 1 to input.length - 1) {
-        val sym_neuron_temp = input(j)*matrix(j)(i)
+        val sym_neuron_temp = input(j)*transposedMatrix(j)(i)
         sym_neuron = sym_neuron + sym_neuron_temp
       }
 
@@ -85,6 +92,9 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int ,
 
       }
       return_array(i) = sym_neuron
+    }
+    } catch{
+      case e: Exception => println(e.getMessage)
     }
     return_array
   }
@@ -102,12 +112,12 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int ,
       if(activation.checkForPattern(this.layer+":"+(i+1))==true){
         Main.activateBoth = false
       } else{
-        Main.activateBoth = true
+//        Main.activateBoth = true
       }
       sym_neuron.applyActivation(af ,Main.activateBoth)
       return_array(i) = sym_neuron
       println("For layer " + this.layer + " activated : " + Main.activateBoth);
-      //printf(sym_neuron.toString);
+      printf(sym_neuron.toString);
     }
     return_array
   }
@@ -242,6 +252,7 @@ class Layers(layers: Int, path_to_dir: String , activations :Activation) {
           }
           r = r + 1
         }
+        matrix.transpose()
         addLayerWeight(matrix, layer)
       }
       finally source.close()

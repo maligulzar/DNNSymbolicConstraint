@@ -5,14 +5,16 @@ import java.util
   */
 object Main_6 {
 
-
+  val map:util.HashMap[String,String] = new util.HashMap[String, String]();
+  map.put("Z3_lib","/Users/Downloads/z3/build/");
+  map.put("PYTHON_PATH","/Users/Downloads/z3/build/python");
   var unreachable = 0
   var activateBoth = true
   def main(args: Array[String]): Unit = {
     var activations = new Activation()
-    activations.load("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/6")
+    activations.load("/Users/Aish/Downloads/SymbolicDNN/ActivationPattern/6")
 
-    val layers = new Layers(3,"/Users/malig/workspace/git/SymbolicDNN/layers/6" , activations)
+    val layers = new Layers(3,"/Users/Aish/Downloads/SymbolicDNN/layers/6" , activations)
 
     val inputsize = 5
 

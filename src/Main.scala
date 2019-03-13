@@ -1,17 +1,19 @@
-
+import java.util
 
 /**
   * Created by malig on 2/28/19.
   */
 object Main {
-
+  val map:util.HashMap[String,String] = new util.HashMap[String, String]();
+  map.put("Z3_lib","/Users/Downloads/z3/build/");
+  map.put("PYTHON_PATH","/Users/Downloads/z3/build/python");
   var unreachable = 0
   var activateBoth = true
   def main(args: Array[String]): Unit = {
     var activations = new Activation()
-    activations.load("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/default")
-    val layers = new Layers(2,"/Users/malig/workspace/git/SymbolicDNN/layers/default" , activations)
-    val inputsize = 3
+    activations.load("/Users/Aish/Downloads/SymbolicDNN/ActivationPattern/AcasXu/activations")
+    val layers = new Layers(7,"/Users/Aish/Downloads/SymbolicDNN/layers/AcasXu" , activations)
+    val inputsize = 5
     val symArr = new Array[SymbolicNeuron](inputsize)
     for( i <- 0 to inputsize-1){
       val symvar = new SymVar(new Numeric(NumericUnderlyingType._Float), "x"+i)
@@ -22,17 +24,16 @@ object Main {
 
     def activation(input: PathEffect , activate : Boolean) : Array[PathEffect] = {
       // Representing ReLU
-    activateBoth = true
+//    activateBoth = true
       val if_stmt = new Clause(input.effect , ComparisonOp.GreaterThan , new ConcreteValue(new Numeric(NumericUnderlyingType._Float) , "0"))
       val effect_if = input.effect
       val p1 = new PathEffect(input.pathConstraint.conjunctWithSideEffectFree(if_stmt),effect_if)
-      if(activateBoth) {
+      if(activate) {
               val else_stmt = new Clause(input.effect , ComparisonOp.LessThanOrEq , new ConcreteValue(new Numeric(NumericUnderlyingType._Float) , "0"))
               val effect_else  = new ConcreteValue(new Numeric(NumericUnderlyingType._Float) , "0")
               val p2 = new PathEffect(input.pathConstraint.conjunctWithSideEffectFree(else_stmt),effect_else)
               return Array(p1, p2)
       }
-
       return Array(p1)
 
     }

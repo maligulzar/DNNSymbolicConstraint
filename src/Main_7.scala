@@ -4,14 +4,16 @@ import java.util
   * Created by malig on 2/28/19.
   */
 object Main_7 {
-
+  val map:util.HashMap[String,String] = new util.HashMap[String, String]();
+  map.put("Z3_lib","/Users/Downloads/z3/build/");
+  map.put("PYTHON_PATH","/Users/Downloads/z3/build/python");
   var unreachable = 0
   var activateBoth = false
   def main(args: Array[String]): Unit = {
 
     var activations = new Activation()
-    activations.load("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/7")
-    val layers = new Layers(2,"/Users/malig/workspace/git/SymbolicDNN/layers/7" , activations)
+    activations.load("/Users/Aish/Downloads/SymbolicDNN/ActivationPattern/7")
+    val layers = new Layers(2,"/Users/Aish/Downloads/SymbolicDNN/layers/7" , activations)
     val inputsize = 10
 
     val symArr = new Array[SymbolicNeuron](inputsize)

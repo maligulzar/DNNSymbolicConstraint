@@ -132,7 +132,7 @@ class SymbolicNeuron(p: Array[PathEffect]) {
       commands.add(s)
       val commandExecutor: SystemCommandExecutor =
         new SystemCommandExecutor(commands, Z3dir)
-      val result: Int = commandExecutor.executeCommand();
+      val result: Int = commandExecutor.executeCommand(Main.map);
       val stdout: java.lang.StringBuilder =
         commandExecutor.getStandardOutputFromCommand
       val stderr: java.lang.StringBuilder =
