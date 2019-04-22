@@ -12,10 +12,10 @@ object Main_7 {
   def main(args: Array[String]): Unit = {
 
     var activations = new Activation()
-    activations.load("/Users/Aish/Downloads/SymbolicDNN/ActivationPattern/7")
-    val layers = new Layers(2,"/Users/Aish/Downloads/SymbolicDNN/layers/7" , activations)
+    activations.load("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/7")
+    val layers = new Layers(2,"/Users/malig/workspace/git/SymbolicDNN/layers/7" , activations)
     val inputsize = 10
-
+// RELUPLEX
     val symArr = new Array[SymbolicNeuron](inputsize)
     for( i <- 0 to inputsize-1){
       val symvar = new SymVar(new Numeric(NumericUnderlyingType._Float), "x"+i)
@@ -23,6 +23,7 @@ object Main_7 {
       val half = new ConcreteValue(new Numeric(NumericUnderlyingType._Float) , "60")
       val cls1 = new Clause(symvar , ComparisonOp.GreaterThanOrEq , zero)
       val cls2 = new Clause(symvar , ComparisonOp.LessThanOrEq , half)
+      // Adding property  0 < X < 60
       symArr(i) = new SymbolicNeuron(Array(new PathEffect(new Constraint(Array(cls1,cls2)) , new SymVar(new Numeric(NumericUnderlyingType._Float), "x"+i))))
     }
     layers.printLayers

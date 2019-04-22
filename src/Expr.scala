@@ -8,15 +8,18 @@ object ArithmeticOp extends Enumeration {
 }
 
 import ArithmeticOp._
+import com.microsoft.z3.{ArithExpr, Context }
 
 abstract class Expr {
   var actualType: VType
+  var cachedExpr:Option[com.microsoft.z3.Expr]
   def toString: String
   def applyEffect(x: SymVar, effect: Expr): Expr
   def toZ3Query(initials: Z3QueryState): String
   def deepCopy: Expr
   def replace(thisVar: SymVar, other: SymVar): Expr
   def addSuffix(sfx: String): Expr
+  def solveUsingZ3(context: Context , simplify:Boolean = true ): ArithExpr
 }
 
 
@@ -40,6 +43,7 @@ case class SymOp(atype: VType, op: ArithmeticOp) /*extends Terminal*/ {
 }
 
 case class ConcreteValue(atype: VType, var value: String) extends Expr {
+  override var cachedExpr: Option[com.microsoft.z3.Expr] = None
   var actualType = atype
   //check validity of passed ConcreteValue
   assert(atype match {
@@ -63,6 +67,17 @@ case class ConcreteValue(atype: VType, var value: String) extends Expr {
     return value.toString
   }
 
+  override def solveUsingZ3(context:Context, simplify: Boolean = true): ArithExpr = {
+    atype match {
+      case t: Numeric =>
+        t.underlyingType match {
+          case NumericUnderlyingType._Float =>
+            return  context.mkReal(value.toString)
+          case _  => throw new Exception("Not supported Type")
+        }
+      case _  => throw new Exception("Not supported Type")        }
+  }
+
   override def deepCopy: ConcreteValue = {
     new ConcreteValue(actualType, value)
   }
@@ -74,6 +89,7 @@ case class ConcreteValue(atype: VType, var value: String) extends Expr {
 // case class UnaryExpr(op: SymOp, right: Expr) extends Expr{}
 
 case class ArithmeticExpr(left: Expr, middle: SymOp, right: Expr) extends Expr {
+  override var cachedExpr: Option[com.microsoft.z3.Expr] = None
   val op: SymOp = middle
 
   val leftExpr: Expr = left
@@ -98,6 +114,25 @@ case class ArithmeticExpr(left: Expr, middle: SymOp, right: Expr) extends Expr {
     s"""(${op.toString}  ${leftExpr.toZ3Query(initials)} ${rightExpr
       .toZ3Query(initials)} )"""
     //"FIX NON TERMINAL Z3 QUERY"
+  }
+
+  override def solveUsingZ3(context: Context, simplify: Boolean): ArithExpr = {
+    op.op match {
+      case ArithmeticOp.Multiplication  =>
+        context.mkMul(rightExpr.solveUsingZ3(context , simplify) , leftExpr.solveUsingZ3(context, simplify))
+
+      case ArithmeticOp.Division  =>
+        context.mkDiv(rightExpr.solveUsingZ3(context , simplify) , leftExpr.solveUsingZ3(context, simplify))
+
+      case ArithmeticOp.Addition  =>
+        context.mkAdd(rightExpr.solveUsingZ3(context , simplify) , leftExpr.solveUsingZ3(context, simplify))
+
+      case ArithmeticOp.Subtraction  =>
+        context.mkSub(rightExpr.solveUsingZ3(context , simplify) , leftExpr.solveUsingZ3(context, simplify))
+
+      case _  => throw new Exception("Not supported Type")
+
+    }
 
   }
 

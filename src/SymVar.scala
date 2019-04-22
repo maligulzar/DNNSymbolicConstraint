@@ -1,6 +1,6 @@
-
+import com.microsoft.z3.{ArithExpr, Context}
 class SymVar(atype: VType, var name: String) extends Expr {
-
+  override var cachedExpr: Option[com.microsoft.z3.Expr] = None
    var actualType = atype
 
   /**
@@ -25,6 +25,20 @@ class SymVar(atype: VType, var name: String) extends Expr {
     initials.addtoInit((temp_name, actualType))
     temp_name
   }
+
+
+  override def solveUsingZ3(context: Context, simplify: Boolean): ArithExpr = {
+    atype match {
+      case t: Numeric =>
+        t.underlyingType match {
+          case NumericUnderlyingType._Float =>
+          //  print(name)
+            return  context.mkRealConst(name)
+          case _  => throw new Exception("Not supported Type")
+        }
+      case _  => throw new Exception("Not supported Type")        }
+  }
+
 
    override def deepCopy: SymVar = {
     new SymVar(actualType, name)

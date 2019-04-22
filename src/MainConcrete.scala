@@ -10,9 +10,9 @@ object MainConcrete {
   def main(args: Array[String]): Unit = {
     var activations = new Activation()
 //    activations.load("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/default")
-    val layers = new Layers(7,"/Users/Aish/Downloads/SymbolicDNN/layers/AcasXu" , activations)
+    val layers = new Layers(7,"/Users/malig/workspace/git/SymbolicDNN/layers/AcasXu/" , activations)
 
-    val inputs = readInputValues("/Users/Aish/Downloads/SymbolicDNN/ActivationPattern/AcasXu/input",1)
+    val inputs = readInputValues("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/AcasXu/input",1)
     layers.printLayers
     activations.print_activations()
 

@@ -1,14 +1,20 @@
 import java.io.{BufferedWriter, File, FileWriter}
 
+import com.microsoft.z3.Context
 
 import scala.collection.mutable.ArrayBuffer
 /**
   * Created by malig on 2/28/19.
   */
+
+object SymbolicDNN{
+  val c = new Context()
+}
 class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : (PathEffect , Boolean) => Array[PathEffect]) {
 
 
-  var Z3DIR: String = "/Users/Aish/Downloads/"
+  var Z3DIR: String = "/Users/malig/workspace/up_jpf/"
+    //"/Users/Aish/Downloads/"
   var SOLVER: String = "Z3"
 
   def setZ3Dir(path: String) {
@@ -38,7 +44,9 @@ class SymbolicDNN(input: Array[SymbolicNeuron], layers: Layers , af : (PathEffec
   }
 
   def solveConstraints(neurons:Int): Unit ={
-    current_symbolic_neurons.map(s => s.solveWithZ3(log=false, SOLVER, Z3DIR , neurons))
+    //current_symbolic_neurons.map(s => s.solveWithZ3(log=false, SOLVER, Z3DIR , neurons))
+    current_symbolic_neurons.map(s => s.solverOnline(neurons))
+
   }
 
   def solveConstraints(neurons:Int , symNeuron:SymbolicNeuron): Unit ={
@@ -112,12 +120,12 @@ class WeightMatrix(layer: Int, neuron_count: Int, prev_layer_neuron_count: Int ,
       if(activation.checkForPattern(this.layer+":"+(i+1))==true){
         Main.activateBoth = false
       } else{
-//        Main.activateBoth = true
+        Main.activateBoth = true
       }
       sym_neuron.applyActivation(af ,Main.activateBoth)
       return_array(i) = sym_neuron
       println("For layer " + this.layer + " activated : " + Main.activateBoth);
-      printf(sym_neuron.toString);
+     // printf(sym_neuron.toString);
     }
     return_array
   }
@@ -189,6 +197,7 @@ class Layers(layers: Int, path_to_dir: String , activations :Activation) {
     var current  = input
     for(matrix <- w_matrices){
       current  = matrix.compute(current, af)
+      current.map( s => s.simplify(SymbolicDNN.c))
     }
     return current
   }

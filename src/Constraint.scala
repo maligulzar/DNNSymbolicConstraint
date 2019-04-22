@@ -1,5 +1,3 @@
-
-
 object ComparisonOp extends Enumeration {
   type ComparisonOp = Value
   val Equality = Value("=")
@@ -15,8 +13,13 @@ object ComparisonOp extends Enumeration {
 
   //def isComparisonOp(s: String): Boolean = values.exists(_.toString == s)
 }
-import ComparisonOp._
 
+import com.microsoft.z3.ApplyResult
+import com.microsoft.z3.BoolExpr
+import com.microsoft.z3.Goal
+
+import ComparisonOp._
+import com.microsoft.z3.{ArithExpr, BoolExpr, Context}
 class Constraint(c: Array[Clause]) {
   var clauses: Array[Clause] = c //there are (implicit) conjunctions among elements of array (clauses)
 
@@ -54,6 +57,22 @@ class Constraint(c: Array[Clause]) {
     s"""(assert ${andClauses(idx, initials)} )"""
   }
 
+  def solveWithZ3(context: Context, simplify: Boolean = true): BoolExpr = {
+    if (clauses.length == 0)
+      return null
+    if (clauses.length == 1) {
+      return clauses(0).solveWithZ3(context, simplify)
+    }
+    clauses.map(s=>s.solveWithZ3(context, simplify)).reduce(
+      (c1,c2) =>
+        context.mkAnd(
+          c1,
+          c2
+        )
+    )
+
+  }
+
   def andClauses(idx: Int, initials: Z3QueryState): String = {
     if (idx == clauses.length - 1) {
       clauses(idx).toZ3Query(initials)
@@ -62,13 +81,13 @@ class Constraint(c: Array[Clause]) {
     }
   }
 
-//  def andClauses(idx: Int, initials: Z3QueryState): String = {
-//    if (idx == clauses.length - 1) {
-//      clauses(idx).toZ3Query(initials)
-//    } else {
-//      s""" (and ${clauses(idx).toZ3Query(initials)} ${andClauses(idx + 1, initials)} )"""
-//    }
-//  }
+  //  def andClauses(idx: Int, initials: Z3QueryState): String = {
+  //    if (idx == clauses.length - 1) {
+  //      clauses(idx).toZ3Query(initials)
+  //    } else {
+  //      s""" (and ${clauses(idx).toZ3Query(initials)} ${andClauses(idx + 1, initials)} )"""
+  //    }
+  //  }
 
   override def equals(other: Any): Boolean = {
     if (other != null && other.isInstanceOf[Constraint]) {
@@ -113,16 +132,23 @@ class Constraint(c: Array[Clause]) {
 
 
 class Clause(left: Expr, op: ComparisonOp = null, right: Expr = null) {
-  var leftExpr: Expr = left
   val compOp: ComparisonOp = op
+  var leftExpr: Expr = left
   var rightExpr: Expr = right
+
+  var cachedExpr: Option[BoolExpr] = None
   assert(left != null)
 
-  override def toString: String = {
-    if (compOp == null || rightExpr == null) leftExpr.toString
-    else leftExpr.toString + " " + compOp.toString + " " + rightExpr.toString
-  }
 
+  def simplify(context:Context): Unit ={
+    val g = context.mkGoal(true, false, false)
+    val constraint = this.solveWithZ3(context, true)
+    g.add(constraint)
+
+    val ar = context.mkTactic("propagate-values").apply(g)
+    val subgoals = ar.getSubgoals
+    cachedExpr = Some(subgoals(0).getFormulas()(0))
+  }
   def toZ3Query(initials: Z3QueryState): String = {
 
     var leftstr = leftExpr.toZ3Query(initials)
@@ -145,10 +171,40 @@ class Clause(left: Expr, op: ComparisonOp = null, right: Expr = null) {
       }
     }
   }
+
+  def solveWithZ3(context:Context, simplify:Boolean = true): BoolExpr ={
+//    if(leftCachedExpr.isDefined) {
+//      op match {
+//        case Equality => context.mkEq(leftCachedExpr.get, rightCachedExpr.get)
+//        case Inequality => context.mkNot(context.mkEq(leftCachedExpr.get, rightCachedExpr.get))
+//        case LessThan => context.mkLt(leftCachedExpr.get, rightCachedExpr.get)
+//        case LessThanOrEq => context.mkLe(leftCachedExpr.get, rightCachedExpr.get)
+//        case GreaterThan => context.mkGt(leftCachedExpr.get, rightCachedExpr.get)
+//        case GreaterThanOrEq => context.mkGe(leftCachedExpr.get, rightCachedExpr.get)
+//        case _ => throw new Exception("Not supported Type")
+//      }
+//    }else{
+      op match {
+        case   Equality => context.mkEq(leftExpr.solveUsingZ3(context, simplify),rightExpr.solveUsingZ3(context, simplify))
+        case Inequality => context.mkNot(context.mkEq(leftExpr.solveUsingZ3(context, simplify),rightExpr.solveUsingZ3(context, simplify)))
+        case LessThan => context.mkLt(leftExpr.solveUsingZ3(context, simplify),rightExpr.solveUsingZ3(context, simplify))
+        case LessThanOrEq => context.mkLe(leftExpr.solveUsingZ3(context, simplify),rightExpr.solveUsingZ3(context, simplify))
+        case GreaterThan => context.mkGt(leftExpr.solveUsingZ3(context, simplify),rightExpr.solveUsingZ3(context, simplify))
+        case GreaterThanOrEq =>context.mkGe(leftExpr.solveUsingZ3(context, simplify),rightExpr.solveUsingZ3(context, simplify))
+        case _=> throw new Exception("Not supported Type")
+      }
+ //   }
+  }
+
   override def equals(other: Any): Boolean = {
     if (other != null && other.isInstanceOf[Clause]) {
       this.toString == other.asInstanceOf[Clause].toString
     } else false
+  }
+
+  override def toString: String = {
+    if (compOp == null || rightExpr == null) leftExpr.toString
+    else leftExpr.toString + " " + compOp.toString + " " + rightExpr.toString
   }
 
   def applyEffect(x: SymVar, effect: Expr): Clause = {
@@ -174,3 +230,4 @@ class Clause(left: Expr, op: ComparisonOp = null, right: Expr = null) {
     else new Clause(leftExpr.addSuffix(sfx))
   }
 }
+

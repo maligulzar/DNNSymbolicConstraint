@@ -1,6 +1,8 @@
 
-import scala.collection.mutable.ArrayBuffer
 import java.util.HashSet
+
+import com.microsoft.z3.{BoolExpr, Context}
+
 import scala.collection.mutable.HashMap
 
 class PathEffect(pc: Constraint, udfEffect: Expr) {
@@ -12,7 +14,7 @@ class PathEffect(pc: Constraint, udfEffect: Expr) {
 
   override def toString: String = {
     var eString: String = effect.toString
-    "path constraint: {" + pathConstraint.toString + "}\t effect: {" + eString + "} ---------"
+    "path constraint: {" + pathConstraint.toString + "}\neffect: {" + eString + "}"
   }
 
 
@@ -45,6 +47,14 @@ class PathEffect(pc: Constraint, udfEffect: Expr) {
   //      //    return buff.filter(s=>s!=null).reduce(_+"\n"+_)
   //    }
 
+
+  def simplify(context:Context): Unit ={
+    for(c <- pathConstraint.clauses){
+      println(c)
+      c.simplify(context)
+      println("Simplified:" + c.cachedExpr.get)
+    }
+  }
   def toZ3Query(): String = {
 
     val list: HashSet[(String, VType)] = new HashSet[(String, VType)]();
@@ -77,6 +87,10 @@ class PathEffect(pc: Constraint, udfEffect: Expr) {
        |
 
      """.stripMargin //,generateSplitConstraints(state))
+  }
+
+  def solveWithZ3(context:Context, simplify:Boolean = true): BoolExpr ={
+    pathConstraint.solveWithZ3(context, simplify)
   }
 
   def processOutput(str: String) {

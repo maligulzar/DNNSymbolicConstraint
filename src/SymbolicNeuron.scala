@@ -1,6 +1,7 @@
 import java.io.{BufferedWriter, File, FileWriter}
 import java.util
 
+import com.microsoft.z3.{Context, Status}
 import udfExtractor.SystemCommandExecutor
 
 /**
@@ -10,6 +11,10 @@ class SymbolicNeuron(p: Array[PathEffect]) {
 
   var paths: Array[PathEffect] = p
 
+  def simplify(c:Context): Unit ={
+    println("\n****************\nSimplifying\n*******************\n")
+    paths.map(p => p.simplify(c))
+  }
 
   def addNeuron(neuron : SymbolicNeuron) : SymbolicNeuron = {
     val array_paths = new Array[PathEffect](this.paths.length * neuron.paths.length)
@@ -92,9 +97,6 @@ class SymbolicNeuron(p: Array[PathEffect]) {
 
   }
 
-
-
-
   def writeTempSMTFile(filename: String, z3: String): Unit = {
     try {
       val file: File = new File(filename)
@@ -132,12 +134,12 @@ class SymbolicNeuron(p: Array[PathEffect]) {
       commands.add(s)
       val commandExecutor: SystemCommandExecutor =
         new SystemCommandExecutor(commands, Z3dir)
-      val result: Int = commandExecutor.executeCommand(Main.map);
+      val result: Int = commandExecutor.executeCommand();
       val stdout: java.lang.StringBuilder =
         commandExecutor.getStandardOutputFromCommand
       val stderr: java.lang.StringBuilder =
         commandExecutor.getStandardErrorFromCommand
-    //  println("********** Satisfying Assigments **********************************************")
+      //  println("********** Satisfying Assigments **********************************************")
       val str_lines = stdout.toString.split("\n")//.filter(p => p.contains("x"))
       if(str_lines.size > 0 )
         println(str_lines.reduce(_+"\n"+_))
@@ -156,6 +158,39 @@ class SymbolicNeuron(p: Array[PathEffect]) {
     return "";
   }
 
+  def solverOnline(neurons:Int): Unit ={
+    var i = 0
+    Main.unreachable = 0
+
+    for (path <- paths) {
+      println("------------------------")
+      //println(path)
+      println("Paths :  " + i)
+      i = i+1
+      val context = SymbolicDNN.c
+      val solver = context.mkSolver
+      var expr = path.solveWithZ3(context, true);
+     // println(expr)
+     // println("\n\n\n\n")
+      //println(expr.simplify())
+      solver.add(expr)
+      val s = solver.check()
+      println("Sat: "  + s)
+      if(s ==  Status.SATISFIABLE){
+        val model = solver.getModel()
+        for( a <- 0 to neurons-1){
+          println(model.eval(context.mkRealConst("x"+a), true))
+        }
+      }
+
+      //
+
+     // println("------------------------")
+    }
+    println("Number of Unreachable "+Main.unreachable);
+
+  }
+
 
   def solveWithZ3(log: Boolean = false , solver:String , z3dir:String , neurons :Int): Unit = {
     var i = 0
@@ -171,9 +206,9 @@ class SymbolicNeuron(p: Array[PathEffect]) {
         println(path.toString)
         println("Z3Query:\n" + str)
       }
-        println("------------------------")
-        println("Paths :  " + i)
-        println(path)
+      println("------------------------")
+      println("Paths :  " + i)
+      println(path)
       i = i+1
       runZ3Command(filename, z3dir , log=log, solver=solver , neurons = neurons);
       println("------------------------")

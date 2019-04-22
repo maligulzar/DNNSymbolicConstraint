@@ -12,9 +12,9 @@ object Main_6 {
   var activateBoth = true
   def main(args: Array[String]): Unit = {
     var activations = new Activation()
-    activations.load("/Users/Aish/Downloads/SymbolicDNN/ActivationPattern/6")
+    activations.load("/Users/malig/workspace/git/SymbolicDNN/ActivationPattern/6")
 
-    val layers = new Layers(3,"/Users/Aish/Downloads/SymbolicDNN/layers/6" , activations)
+    val layers = new Layers(3,"/Users/malig/workspace/git/SymbolicDNN/layers/6" , activations)
 
     val inputsize = 5
 
@@ -45,7 +45,7 @@ object Main_6 {
     val symDnn = new SymbolicDNN(symArr,layers , activation)
 
     symDnn.symExecDNN()
-    symDnn.print_SymbolicNeuron()
+   //symDnn.print_SymbolicNeuron()
     val startTime = System.nanoTime
     symDnn.solveConstraints(inputsize)
     val endTime = System.nanoTime
